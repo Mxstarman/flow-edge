@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.graphics.PixelFormat
@@ -18,11 +19,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.app.NotificationCompat
-import androidx.lifecycle.LifecycleService
-import androidx.lifecycle.setViewTreeLifecycleOwner
-import androidx.lifecycle.setViewTreeViewModelStoreOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
@@ -45,18 +48,23 @@ import kotlinx.coroutines.launch
  * Renders the Edge Handle and Slide-Out Panel on top of all Android apps
  * using WindowManager and TYPE_APPLICATION_OVERLAY.
  */
-class EdgeOverlayService : LifecycleService(), SavedStateRegistryOwner, ViewModelStoreOwner {
+class EdgeOverlayService : Service(), LifecycleOwner, SavedStateRegistryOwner, ViewModelStoreOwner {
 
-    private lateinit var windowManager: WindowManager
-    private var overlayComposeView: ComposeView? = null
+    private val lifecycleRegistry = LifecycleRegistry(this)
     private val savedStateRegistryController = SavedStateRegistryController.create(this)
     private val appViewModelStore = ViewModelStore()
     private val serviceScope = CoroutineScope(Dispatchers.Main)
+
+    private lateinit var windowManager: WindowManager
+    private var overlayComposeView: ComposeView? = null
 
     private lateinit var settingsRepo: SettingsRepository
     private lateinit var appRepo: AppRepository
     private lateinit var notesRepo: NotesRepository
     private lateinit var calendarRepo: CalendarRepository
+
+    override val lifecycle: Lifecycle
+        get() = lifecycleRegistry
 
     override val savedStateRegistry: SavedStateRegistry
         get() = savedStateRegistryController.savedStateRegistry
@@ -67,6 +75,9 @@ class EdgeOverlayService : LifecycleService(), SavedStateRegistryOwner, ViewMode
     override fun onCreate() {
         super.onCreate()
         savedStateRegistryController.performRestore(null)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_CREATE)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_START)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
 
         settingsRepo = SettingsRepository(this)
         appRepo = AppRepository(this)
@@ -93,7 +104,7 @@ class EdgeOverlayService : LifecycleService(), SavedStateRegistryOwner, ViewMode
                 description = "Keeps the Flow Edge handle active on your screen"
             }
             val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(channel)
+            manager?.createNotificationChannel(channel)
         }
 
         val launchIntent = Intent(this, MainActivity::class.java)
@@ -160,7 +171,7 @@ class EdgeOverlayService : LifecycleService(), SavedStateRegistryOwner, ViewMode
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                                 putExtra("open_settings", true)
                             }
-                            startActivity(intent)
+                            this@EdgeOverlayService.startActivity(intent)
                         },
                         onToggleFavoriteApp = { appRepo.toggleFavorite(it) },
                         onAddNote = { t, c, col -> notesRepo.addNote(t, c, col) },
@@ -183,7 +194,9 @@ class EdgeOverlayService : LifecycleService(), SavedStateRegistryOwner, ViewMode
     }
 
     override fun onDestroy() {
-        super.onDestroy()
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_PAUSE)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+        lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_DESTROY)
         overlayComposeView?.let {
             try {
                 windowManager.removeView(it)
@@ -193,10 +206,10 @@ class EdgeOverlayService : LifecycleService(), SavedStateRegistryOwner, ViewMode
         }
         serviceScope.cancel()
         appViewModelStore.clear()
+        super.onDestroy()
     }
 
-    override fun onBind(intent: Intent): IBinder? {
-        super.onBind(intent)
+    override fun onBind(intent: Intent?): IBinder? {
         return null
     }
 
