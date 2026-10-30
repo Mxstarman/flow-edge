@@ -1,4 +1,4 @@
-name: Build Flow Edge APK
+name: Build Flow Edge Release APK
 
 on:
   push:
@@ -26,45 +26,52 @@ jobs:
           distribution: 'temurin'
           cache: 'gradle'
 
+      - name: Generate Release Keystore
+        run: |
+          keytool -genkeypair -v -keystore release.keystore -alias flowedge -keyalg RSA -keysize 2048 -validity 10000 -storepass password123 -keypass password123 -dname "CN=FlowEdge, OU=FlowEdge, O=FlowEdge, L=Unknown, S=Unknown, C=US"
+          ls -la release.keystore
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
+      - name: Build Release APK
+        run: ./gradlew assembleRelease --stacktrace
 
-      - name: Copy & Rename APK
+      - name: Copy & Prepare APK
         run: |
           mkdir -p release-output
-          cp app/build/outputs/apk/debug/app-debug.apk release-output/FlowEdge-v1.0.0.apk
-          ls -la release-output
+          cp app/build/outputs/apk/release/app-release.apk release-output/FlowEdge-v1.0.1.apk
+          cp app/build/outputs/apk/release/app-release.apk release-output/FlowEdge.apk
+          ls -lh release-output
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FlowEdge-v1.0.0-apk
-          path: release-output/FlowEdge-v1.0.0.apk
+          name: FlowEdge-v1.0.1-apk
+          path: release-output/FlowEdge-v1.0.1.apk
           retention-days: 30
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release v1.0.1
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.0
-          name: Flow Edge v1.0.0
+          tag_name: v1.0.1
+          name: Flow Edge v1.0.1 (Signed Release)
           body: |
-            ### 🚀 Flow Edge v1.0.0 Release
+            ### 🚀 Flow Edge v1.0.1 - Fixed Mobile Installation
 
-            Flow Edge is a native Android edge panel application built in Kotlin with Jetpack Compose.
+            This release fixes the mobile APK installation error:
+            - **Signed with V1 + V2 + V3 Signatures**: Generates official cryptographic signatures compatible with all Android package installers.
+            - **Non-Debug Release Build**: Eliminates `testOnly` and `debuggable` flags that caused mobile PackageInstaller rejections.
+            - **Universal Manifest Compatibility**: Removed `<property>` tag and restricted permissions causing `INSTALL_PARSE_FAILED_MANIFEST_MALFORMED` on Android 8–14.
+            - **Included Multi-Density Launcher Mipmaps**: Added full raster icons for all screen densities.
 
-            #### Features:
-            - **Customizable Right-Side Edge Handle**: Drag up and down to adjust position along the edge.
-            - **Multi-Panel Swipe Carousel**: Quick Notes, Calendar, Calculator, Quick Tools, and Apps.
-            - **Drag-and-Drop Pop-up View**: Drag any app onto the screen to open in floating pop-up view.
-            - **System-Wide Overlay Service**: Runs over any app across Android OS.
-
-            #### Download:
-            Download and install **FlowEdge-v1.0.0.apk** below!
-          files: release-output/FlowEdge-v1.0.0.apk
+            #### 📥 Download:
+            - **[FlowEdge-v1.0.1.apk](https://github.com/Mxstarman/flow-edge/releases/download/v1.0.1/FlowEdge-v1.0.1.apk)**
+            - **[FlowEdge.apk](https://github.com/Mxstarman/flow-edge/releases/download/v1.0.1/FlowEdge.apk)**
+          files: |
+            release-output/FlowEdge-v1.0.1.apk
+            release-output/FlowEdge.apk
           draft: false
           prerelease: false
         env:
