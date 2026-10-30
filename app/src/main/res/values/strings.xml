@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Flow Edge</string>
+    <string name="overlay_service_title">Flow Edge Running</string>
+    <string name="overlay_service_desc">Swipe from the right edge to open quick tools and apps</string>
+    <string name="panel_apps">Apps</string>
+    <string name="panel_notes">Quick Notes</string>
+    <string name="panel_calendar">Calendar</string>
+    <string name="panel_calculator">Calculator</string>
+    <string name="panel_tools">Quick Tools</string>
+    <string name="drop_target_hint">Drop here to open in Pop-up view</string>
+    <string name="enable_overlay">Enable Edge Overlay</string>
+    <string name="permission_required">Overlay permission required to display over other apps</string>
+</resources>

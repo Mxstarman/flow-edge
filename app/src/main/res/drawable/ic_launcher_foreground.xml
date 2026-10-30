@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Edge Handle Pill Graphic -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M70,30 L74,30 A6,6 0 0,1 80,36 L80,72 A6,6 0 0,1 74,78 L70,78 Z" />
+    <path
+        android:fillColor="#E0FFFFFF"
+        android:pathData="M28,24 L64,24 A8,8 0 0,1 72,32 L72,76 A8,8 0 0,1 64,84 L28,84 A8,8 0 0,1 20,76 L20,32 A8,8 0 0,1 28,24 Z" />
+    <path
+        android:fillColor="#0381FE"
+        android:pathData="M32,36 h12 v12 h-12 z M50,36 h12 v12 h-12 z M32,54 h12 v12 h-12 z M50,54 h12 v12 h-12 z" />
+</vector>

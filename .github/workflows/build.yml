@@ -1,0 +1,71 @@
+name: Build Flow Edge APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build & Release APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Copy & Rename APK
+        run: |
+          mkdir -p release-output
+          cp app/build/outputs/apk/debug/app-debug.apk release-output/FlowEdge-v1.0.0.apk
+          ls -la release-output
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FlowEdge-v1.0.0-apk
+          path: release-output/FlowEdge-v1.0.0.apk
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          name: Flow Edge v1.0.0
+          body: |
+            ### 🚀 Flow Edge v1.0.0 Release
+
+            Flow Edge is a native Android edge panel application built in Kotlin with Jetpack Compose.
+
+            #### Features:
+            - **Customizable Right-Side Edge Handle**: Drag up and down to adjust position along the edge.
+            - **Multi-Panel Swipe Carousel**: Quick Notes, Calendar, Calculator, Quick Tools, and Apps.
+            - **Drag-and-Drop Pop-up View**: Drag any app onto the screen to open in floating pop-up view.
+            - **System-Wide Overlay Service**: Runs over any app across Android OS.
+
+            #### Download:
+            Download and install **FlowEdge-v1.0.0.apk** below!
+          files: release-output/FlowEdge-v1.0.0.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
